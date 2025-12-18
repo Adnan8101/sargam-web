@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import Image from "next/image";
 import { useRef } from "react";
 import { ArrowRight } from "lucide-react";
@@ -48,30 +48,39 @@ function FeatureCard({ group, index }: { group: typeof featureGroups[0], index: 
     const ref = useRef<HTMLDivElement>(null);
     const { scrollYProgress } = useScroll({
         target: ref,
-        offset: ["0 1", "1.2 1"] // Start animation when card enters viewport
+        offset: ["0 1", "0.8 1"] // Smoother entry offset
     });
 
-    // Zoom In effect: Scale from 0.8 to 1 as it scrolls into view
-    const scaleProgress = useTransform(scrollYProgress, [0, 1], [0.8, 1]);
-    const opacityProgress = useTransform(scrollYProgress, [0, 1], [0.6, 1]);
+    // 1. SPRING PHYSICS: Decouple from raw scroll to remove jitter and adding "weight"
+    const smoothProgress = useSpring(scrollYProgress, {
+        stiffness: 100,
+        damping: 20,
+        restDelta: 0.001
+    });
+
+    // 2. SUBTLE SCALING: 0.9 -> 1.0 is more professional than 0.8
+    const scale = useTransform(smoothProgress, [0, 1], [0.92, 1]);
+    const opacity = useTransform(smoothProgress, [0, 1], [0.5, 1]);
+
+    // 3. INTERNAL PARALLAX: Image moves slightly slower than card for depth
+    const imageY = useTransform(smoothProgress, [0, 1], [20, 0]);
 
     return (
         <motion.div
             ref={ref}
-            style={{
-                scale: scaleProgress,
-                opacity: opacityProgress,
-            }}
+            style={{ scale, opacity }}
             className="feature-card group flex flex-col hover:border-primary/10 will-change-transform"
         >
             <div className="relative w-full h-[320px] mb-12 rounded-[2.5rem] overflow-hidden bg-white border border-border group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.04)] transition-all flex items-center justify-center p-12">
-                <Image
-                    src={group.svg}
-                    alt=""
-                    width={350}
-                    height={350}
-                    className="object-contain group-hover:scale-105 transition-transform duration-700"
-                />
+                <motion.div style={{ y: imageY }} className="relative w-full h-full flex items-center justify-center">
+                    <Image
+                        src={group.svg}
+                        alt=""
+                        width={350}
+                        height={350}
+                        className="object-contain group-hover:scale-105 transition-transform duration-700 will-change-transform"
+                    />
+                </motion.div>
             </div>
 
             <h3 className="text-3xl font-black mb-6 tracking-tight text-foreground">{group.title}</h3>
@@ -98,13 +107,20 @@ function LargeFeatureBlock() {
         offset: ["0 1", "0.8 1"]
     });
 
-    const scale = useTransform(scrollYProgress, [0, 1], [0.9, 1]);
-    const opacity = useTransform(scrollYProgress, [0, 1], [0, 1]);
+    const smoothProgress = useSpring(scrollYProgress, {
+        stiffness: 100,
+        damping: 20,
+        restDelta: 0.001
+    });
+
+    const scale = useTransform(smoothProgress, [0, 1], [0.95, 1]);
+    const opacity = useTransform(smoothProgress, [0, 1], [0.5, 1]);
+    const y = useTransform(smoothProgress, [0, 1], [50, 0]);
 
     return (
         <motion.div
             ref={ref}
-            style={{ scale, opacity }}
+            style={{ scale, opacity, y }}
             className="bg-primary p-16 rounded-[4rem] col-span-1 md:col-span-2 flex flex-col lg:flex-row items-center justify-between gap-16 text-white shadow-3xl shadow-primary/20 will-change-transform"
         >
             <div className="space-y-8 flex-1">
