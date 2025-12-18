@@ -1,13 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Music, Heart, Zap, Star, Headphones, Lock, CheckCircle2 } from "lucide-react";
-
 import { useSearchParams } from "next/navigation";
 
-export default function SpotifyPage() {
+function SpotifyContent() {
     const searchParams = useSearchParams();
     const discordId = searchParams.get("discord_id");
     const username = searchParams.get("username");
@@ -131,5 +130,20 @@ export default function SpotifyPage() {
 
             <Footer />
         </main>
+    );
+}
+
+export default function SpotifyPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#F7F7F7] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p className="font-bold text-zinc-500">Loading Spotify Integration...</p>
+                </div>
+            </div>
+        }>
+            <SpotifyContent />
+        </Suspense>
     );
 }
