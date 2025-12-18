@@ -27,14 +27,22 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ connected: false });
         }
 
+        // Construct Discord avatar URL if it's a hash
+        let finalAvatar = connection.spotifyImage;
+        if (!finalAvatar && connection.discordAvatar) {
+            if (connection.discordAvatar.startsWith("http")) {
+                finalAvatar = connection.discordAvatar;
+            } else {
+                finalAvatar = `https://cdn.discordapp.com/avatars/${discordId}/${connection.discordAvatar}.png`;
+            }
+        }
+
         return NextResponse.json({
             connected: true,
             discordId,
-            username: connection.discordUsername,
-            avatar: connection.discordAvatar,
-            spotifyId: connection.spotifyUserId,
-            spotifyName: connection.spotifyDisplayName,
-            spotifyImage: connection.spotifyImage
+            username: connection.spotifyDisplayName || connection.discordUsername,
+            avatar: finalAvatar,
+            spotifyName: connection.spotifyDisplayName
         });
     } catch (error) {
         console.error("Error in /api/auth/me:", error);
