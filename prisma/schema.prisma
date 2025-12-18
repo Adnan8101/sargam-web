@@ -1,0 +1,466 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model CanonicalTrack {
+  id                  String   @id @default(uuid()) @map("track_id") @db.Uuid
+  normalizedTitle     String   @map("normalized_title") @db.VarChar(512)
+  normalizedArtists   String[] @map("normalized_artists")
+  durationMs          Int      @map("duration_ms")
+  preferredSourceType String   @map("preferred_source_type") @db.VarChar(50)
+  preferredSourceId   String   @map("preferred_source_id") @db.VarChar(255)
+  fallbackSources     Json?    @map("fallback_sources")
+  metadataProvider    String   @map("metadata_provider") @db.VarChar(50)
+  providerTrackId     String?  @map("provider_track_id") @db.VarChar(255)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([metadataProvider, providerTrackId], map: "idx_canonical_tracks_provider")
+  @@index([preferredSourceType, preferredSourceId], map: "idx_canonical_tracks_source")
+  @@map("canonical_tracks")
+}
+
+model Playlist {
+  id          String   @id @default(uuid()) @map("playlist_id") @db.Uuid
+  ownerId     BigInt   @map("owner_id")
+  name        String   @db.VarChar(256)
+  description String?
+  visibility  String   @default("PRIVATE") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([ownerId], map: "idx_playlists_owner")
+  @@map("playlists")
+}
+
+model PlaylistTrack {
+  id               String   @id @default(uuid()) @map("playlist_track_id") @db.Uuid
+  playlistId       String   @map("playlist_id") @db.Uuid
+  canonicalTrackId String   @map("canonical_track_id") @db.Uuid
+  orderIndex       Int      @map("order_index")
+  addedByUserId    BigInt   @map("added_by_user_id")
+  addedAt          DateTime @default(now()) @map("added_at")
+
+  @@index([playlistId, orderIndex], map: "idx_playlist_tracks_playlist")
+  @@index([canonicalTrackId], map: "idx_playlist_tracks_track")
+  @@map("playlist_tracks")
+}
+
+model GuildConfig {
+  guildId            BigInt   @id @map("guild_id")
+  djRoleIds          BigInt[] @map("dj_role_ids")
+  privilegedUserIds  BigInt[] @map("privileged_user_ids")
+  allowAnyoneSkip    Boolean  @default(false) @map("allow_anyone_skip")
+  voteSkipThreshold  Decimal  @default(0.5) @map("vote_skip_threshold") @db.Decimal(3, 2)
+  maxQueueSize       Int      @default(1000) @map("max_queue_size")
+  maxTrackDurationMs Int      @default(7200000) @map("max_track_duration_ms")
+  defaultVolume      Int      @default(50) @map("default_volume")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("guild_configs")
+}
+
+model UserFavorite {
+  userId           BigInt   @map("user_id")
+  canonicalTrackId String   @map("canonical_track_id") @db.Uuid
+  addedAt          DateTime @default(now()) @map("added_at")
+
+  @@id([userId, canonicalTrackId])
+  @@map("user_favorites")
+}
+
+model SpotifyConnection {
+  id              Int      @id @default(autoincrement())
+  discordId       String   @unique @map("discord_id") @db.VarChar(255)
+  spotifyUserId   String   @map("spotify_user_id") @db.VarChar(255)
+  accessToken     String   @map("access_token")
+  refreshToken    String   @map("refresh_token")
+  expiresAt       DateTime @map("expires_at")
+  discordUsername String?  @map("discord_username") @db.VarChar(255)
+  discordAvatar   String?  @map("discord_avatar") @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  isActive        Boolean  @default(true) @map("is_active")
+  scopes          String?
+
+  @@index([discordId], map: "idx_spotify_connections_discord_id")
+  @@index([spotifyUserId], map: "idx_spotify_connections_spotify_user_id")
+  @@index([isActive], map: "idx_spotify_connections_active")
+  @@map("spotify_connections")
+}
+
+model UserListeningHistory {
+  id               String   @id @default(uuid()) @map("history_id") @db.Uuid
+  userId           BigInt   @map("user_id")
+  guildId          BigInt   @map("guild_id")
+  canonicalTrackId String?  @map("canonical_track_id") @db.Uuid
+  trackTitle       String   @map("track_title") @db.VarChar(512)
+  trackArtist      String   @map("track_artist") @db.VarChar(512)
+  trackDurationMs  Int      @map("track_duration_ms")
+  playedAt         DateTime @default(now()) @map("played_at")
+  sourceUrl        String?  @map("source_url")
+  completed        Boolean  @default(true)
+
+  @@index([canonicalTrackId], map: "idx_user_history_track")
+  @@map("user_listening_history")
+}
+
+model UserStatistics {
+  userId               BigInt    @map("user_id")
+  guildId              BigInt    @map("guild_id")
+  totalTracksPlayed    Int       @default(0) @map("total_tracks_played")
+  totalListeningTimeMs BigInt    @default(0) @map("total_listening_time_ms")
+  uniqueTracksPlayed   Int       @default(0) @map("unique_tracks_played")
+  lastPlayedAt         DateTime? @map("last_played_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@id([userId, guildId])
+  @@index([userId], map: "idx_user_stats_user")
+  @@map("user_statistics")
+}
+
+model GuildStatistics {
+  guildId              BigInt   @id @map("guild_id")
+  totalTracksPlayed    Int      @default(0) @map("total_tracks_played")
+  totalListeningTimeMs BigInt   @default(0) @map("total_listening_time_ms")
+  uniqueUsers          Int      @default(0) @map("unique_users")
+  uniqueTracks         Int      @default(0) @map("unique_tracks")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("guild_statistics")
+}
+
+model UserIdentity {
+  discordUserId   BigInt   @id @map("discord_user_id")
+  discordUsername String   @map("discord_username") @db.VarChar(255)
+  discriminator   String?  @db.VarChar(10)
+  avatarUrl       String?  @map("avatar_url")
+  spotifyUserId   String?  @map("spotify_user_id") @db.VarChar(255)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("user_identities")
+}
+
+model PlaySession {
+  sessionId         String    @id @default(uuid()) @map("session_id") @db.Uuid
+  guildId           BigInt    @map("guild_id")
+  voiceChannelId    BigInt    @map("voice_channel_id")
+  trackId           String?   @map("track_id") @db.Uuid
+  requestedByUserId BigInt    @map("requested_by_user_id")
+  startedAt         DateTime  @map("started_at")
+  endedAt           DateTime? @map("ended_at")
+  endReason         String?   @map("end_reason") @db.VarChar(50)
+  playedDurationMs  BigInt    @default(0) @map("played_duration_ms")
+  dspProfile        Json?     @map("dsp_profile")
+  isAutoplay        Boolean   @default(false) @map("is_autoplay")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@index([guildId, startedAt], map: "idx_play_sessions_guild")
+  @@index([requestedByUserId, startedAt], map: "idx_play_sessions_user")
+  @@index([trackId], map: "idx_play_sessions_track")
+  @@map("play_sessions")
+}
+
+model VoiceSession {
+  sessionId   String    @id @default(uuid()) @map("session_id") @db.Uuid
+  userId      BigInt    @map("user_id")
+  guildId     BigInt    @map("guild_id")
+  channelId   BigInt    @map("channel_id")
+  joinedAt    DateTime  @map("joined_at")
+  leftAt      DateTime? @map("left_at")
+  durationMs  BigInt    @default(0) @map("duration_ms")
+  isListening Boolean   @default(false) @map("is_listening")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("voice_sessions")
+}
+
+model CommandExecution {
+  executionId     String   @id @default(uuid()) @map("execution_id") @db.Uuid
+  commandName     String   @map("command_name") @db.VarChar(255)
+  commandCategory String?  @map("command_category") @db.VarChar(100)
+  userId          BigInt   @map("user_id")
+  guildId         BigInt?  @map("guild_id")
+  timestamp       DateTime @default(now())
+  success         Boolean  @default(true)
+  latencyMs       BigInt?  @map("latency_ms")
+  errorMessage    String?  @map("error_message")
+
+  @@index([userId, timestamp], map: "idx_command_executions_user")
+  @@index([guildId, timestamp], map: "idx_command_executions_guild")
+  @@index([commandName, timestamp], map: "idx_command_executions_command")
+  @@map("command_executions")
+}
+
+model UserMusicStats {
+  userId               BigInt    @map("user_id")
+  guildId              BigInt    @map("guild_id")
+  totalTracksPlayed    Int       @default(0) @map("total_tracks_played")
+  totalMinutesListened BigInt    @default(0) @map("total_minutes_listened")
+  totalSessions        Int       @default(0) @map("total_sessions")
+  avgSessionLengthMs   BigInt    @default(0) @map("avg_session_length_ms")
+  uniqueTracksPlayed   Int       @default(0) @map("unique_tracks_played")
+  uniqueArtistsPlayed  Int       @default(0) @map("unique_artists_played")
+  tracksSkipped        Int       @default(0) @map("tracks_skipped")
+  autoplayCount        Int       @default(0) @map("autoplay_count")
+  lastPlayedAt         DateTime? @map("last_played_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@id([userId, guildId])
+  @@map("user_music_stats")
+}
+
+model UserTopTrack {
+  userId          BigInt   @map("user_id")
+  trackId         String   @map("track_id") @db.Uuid
+  playCount       Int      @default(0) @map("play_count")
+  totalPlayTimeMs BigInt   @default(0) @map("total_play_time_ms")
+  lastPlayedAt    DateTime @map("last_played_at")
+  firstPlayedAt   DateTime @map("first_played_at")
+
+  @@id([userId, trackId])
+  @@map("user_top_tracks")
+}
+
+model UserTopArtist {
+  userId        BigInt   @map("user_id")
+  artist        String   @db.VarChar(512)
+  playCount     Int      @default(0) @map("play_count")
+  totalMinutes  BigInt   @default(0) @map("total_minutes")
+  lastPlayedAt  DateTime @map("last_played_at")
+  firstPlayedAt DateTime @map("first_played_at")
+
+  @@id([userId, artist])
+  @@map("user_top_artists")
+}
+
+model UserVoiceStats {
+  userId               BigInt    @map("user_id")
+  guildId              BigInt    @map("guild_id")
+  totalVcTimeMs        BigInt    @default(0) @map("total_vc_time_ms")
+  totalListeningTimeMs BigInt    @default(0) @map("total_listening_time_ms")
+  totalSessions        Int       @default(0) @map("total_sessions")
+  longestSessionMs     BigInt    @default(0) @map("longest_session_ms")
+  avgSessionLengthMs   BigInt    @default(0) @map("avg_session_length_ms")
+  lastJoinedAt         DateTime? @map("last_joined_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@id([userId, guildId])
+  @@map("user_voice_stats")
+}
+
+model UserCommandStats {
+  userId       BigInt   @map("user_id")
+  guildId      BigInt   @map("guild_id")
+  commandName  String   @map("command_name") @db.VarChar(255)
+  usageCount   Int      @default(0) @map("usage_count")
+  successCount Int      @default(0) @map("success_count")
+  failureCount Int      @default(0) @map("failure_count")
+  avgLatencyMs BigInt   @default(0) @map("avg_latency_ms")
+  lastUsedAt   DateTime @map("last_used_at")
+  firstUsedAt  DateTime @map("first_used_at")
+
+  @@id([userId, guildId, commandName])
+  @@map("user_command_stats")
+}
+
+model SpotifyUserStats {
+  spotifyUserId       String    @id @map("spotify_user_id") @db.VarChar(255)
+  discordUserId       BigInt    @unique @map("discord_user_id")
+  displayName         String?   @map("display_name") @db.VarChar(255)
+  email               String?   @db.VarChar(255)
+  profileUrl          String?   @map("profile_url")
+  imageUrl            String?   @map("image_url")
+  topTracks           Json?     @map("top_tracks")
+  topArtists          Json?     @map("top_artists")
+  recentTracks        Json?     @map("recent_tracks")
+  playlistsImported   Int       @default(0) @map("playlists_imported")
+  likedTracksImported Int       @default(0) @map("liked_tracks_imported")
+  lastSyncAt          DateTime? @map("last_sync_at")
+  connectedAt         DateTime  @default(now()) @map("connected_at")
+
+  @@index([discordUserId], map: "idx_spotify_user_stats_discord")
+  @@map("spotify_user_stats")
+}
+
+model GuildDjRole {
+  guildId   BigInt   @id @map("guild_id")
+  roleId    BigInt   @map("role_id")
+  updatedBy BigInt   @map("updated_by")
+  updatedAt DateTime @default(now()) @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([guildId], map: "idx_guild_dj_role_guild")
+  @@index([roleId], map: "idx_guild_dj_role_role")
+  @@map("guild_dj_role")
+}
+
+model GuildDjCommand {
+  id        Int      @id @default(autoincrement())
+  guildId   BigInt   @map("guild_id")
+  command   String   @db.VarChar(100)
+  djOnly    Boolean  @default(false) @map("dj_only")
+  updatedBy BigInt   @map("updated_by")
+  updatedAt DateTime @default(now()) @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([guildId, command])
+  @@index([guildId], map: "idx_guild_dj_commands_guild")
+  @@index([guildId, command], map: "idx_guild_dj_commands_command")
+  @@index([guildId, djOnly], map: "idx_guild_dj_commands_dj_only")
+  @@map("guild_dj_commands")
+}
+
+model Guild247Mode {
+  guildId        BigInt   @id @map("guild_id")
+  enabled        Boolean  @default(false)
+  voiceChannelId BigInt?  @map("voice_channel_id")
+  enabledBy      BigInt   @map("enabled_by")
+  enabledAt      DateTime @default(now()) @map("enabled_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  @@index([guildId, enabled], map: "idx_guild_247_mode_enabled")
+  @@map("guild_247_mode")
+}
+
+model GuildFilterConfig {
+  guildId      BigInt   @id @map("guild_id")
+  activeFilter String?  @map("active_filter") @db.VarChar(50)
+  filterLocked Boolean  @default(false) @map("filter_locked")
+  setBy        BigInt?  @map("set_by")
+  setAt        DateTime @default(now()) @map("set_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  @@index([guildId], map: "idx_guild_filter_config_guild")
+  @@map("guild_filter_config")
+}
+
+model PersonalPlaylist {
+  id              BigInt          @id @default(autoincrement()) @map("playlist_id")
+  userId          BigInt          @map("user_id")
+  guildId         BigInt          @map("guild_id")
+  name            String          @db.VarChar(100)
+  description     String?
+  isSmart         Boolean         @default(false) @map("is_smart")
+  smartCriteria   Json?           @map("smart_criteria")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @default(now()) @map("updated_at")
+  trackCount      Int             @default(0) @map("track_count")
+  totalDurationMs BigInt          @default(0) @map("total_duration_ms")
+  privacy         PlaylistPrivacy @default(PRIVATE)
+
+  @@unique([userId, guildId, name], map: "uk_playlist_user_name")
+  @@index([userId, guildId], map: "idx_playlist_user")
+  @@index([privacy], map: "idx_playlist_privacy")
+  @@index([isSmart], map: "idx_playlist_smart")
+  @@map("personal_playlists")
+}
+
+model PersonalPlaylistTrack {
+  id                BigInt   @id @default(autoincrement()) @map("track_id")
+  playlistId        BigInt   @map("playlist_id")
+  position          Int
+  trackUri          String   @map("track_uri")
+  trackTitle        String   @map("track_title") @db.VarChar(500)
+  trackArtist       String?  @map("track_artist") @db.VarChar(500)
+  trackAlbum        String?  @map("track_album") @db.VarChar(500)
+  trackDurationMs   BigInt?  @map("track_duration_ms")
+  trackThumbnailUrl String?  @map("track_thumbnail_url")
+  addedAt           DateTime @default(now()) @map("added_at")
+  addedBy           BigInt   @map("added_by")
+
+  @@unique([playlistId, position], map: "uk_playlist_position")
+  @@index([playlistId], map: "idx_track_playlist")
+  @@index([trackUri], map: "idx_track_uri")
+  @@map("personal_playlist_tracks")
+}
+
+model PersonalPlaylistShare {
+  id               BigInt    @id @default(autoincrement()) @map("share_id")
+  playlistId       BigInt    @map("playlist_id")
+  sharedWithUserId BigInt?   @map("shared_with_user_id")
+  shareCode        String?   @unique @default(cuid()) @map("share_code") @db.VarChar(50)
+  canEdit          Boolean   @default(false) @map("can_edit")
+  sharedAt         DateTime  @default(now()) @map("shared_at")
+  expiresAt        DateTime? @map("expires_at")
+
+  @@index([playlistId], map: "idx_share_playlist")
+  @@index([shareCode], map: "idx_share_code")
+  @@index([sharedWithUserId], map: "idx_share_user")
+  @@map("personal_playlist_shares")
+}
+
+model PersonalPlaylistImport {
+  id               BigInt    @id @default(autoincrement()) @map("import_id")
+  playlistId       BigInt    @map("playlist_id")
+  sourcePlatform   String    @map("source_platform") @db.VarChar(50)
+  sourceUrl        String    @map("source_url")
+  sourcePlaylistId String?   @map("source_playlist_id") @db.VarChar(255)
+  sourceSnapshotId String?   @map("source_snapshot_id") @db.VarChar(255)
+  importedAt       DateTime  @default(now()) @map("imported_at")
+  lastSyncedAt     DateTime? @map("last_synced_at")
+  autoSyncEnabled  Boolean   @default(false) @map("auto_sync_enabled")
+  tracksImported   Int       @default(0) @map("tracks_imported")
+
+  @@index([playlistId], map: "idx_import_playlist")
+  @@index([sourcePlatform, sourcePlaylistId], map: "idx_import_source")
+  @@map("personal_playlist_imports")
+}
+
+model PersonalPlaylistStats {
+  id                   BigInt    @id @default(autoincrement()) @map("stat_id")
+  playlistId           BigInt    @unique @map("playlist_id")
+  playCount            BigInt    @default(0) @map("play_count")
+  lastPlayedAt         DateTime? @map("last_played_at")
+  totalPlaysDurationMs BigInt    @default(0) @map("total_plays_duration_ms")
+  uniqueListeners      Int       @default(0) @map("unique_listeners")
+
+  @@index([playCount], map: "idx_stats_play_count")
+  @@map("personal_playlist_stats")
+}
+
+model SmartPlaylistSeed {
+  id         BigInt  @id @default(autoincrement()) @map("seed_id")
+  playlistId BigInt  @map("playlist_id")
+  seedType   String  @map("seed_type") @db.VarChar(50)
+  seedValue  String  @map("seed_value") @db.VarChar(500)
+  seedUri    String? @map("seed_uri")
+  weight     Decimal @default(1.0) @db.Decimal(3, 2)
+
+  @@index([playlistId], map: "idx_seed_playlist")
+  @@index([seedType], map: "idx_seed_type")
+  @@map("smart_playlist_seeds")
+}
+
+model VoiceChannelTitleConfig {
+  guildId               BigInt   @id @map("guild_id")
+  enabled               Boolean  @default(false)
+  titleFormat           String   @default("🎵 {title}") @map("title_format") @db.VarChar(255)
+  maxLength             Int      @default(100) @map("max_length")
+  updateCooldownSeconds Int      @default(10) @map("update_cooldown_seconds")
+  lastUpdated           DateTime @default(now()) @map("last_updated")
+  updatedBy             BigInt?  @map("updated_by")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  @@index([guildId], map: "idx_vc_title_guild")
+  @@index([enabled], map: "idx_vc_title_enabled")
+  @@map("voice_channel_title_config")
+}
+
+enum PlaylistPrivacy {
+  PRIVATE
+  PUBLIC
+  SHARED
+}
