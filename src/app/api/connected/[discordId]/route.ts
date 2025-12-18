@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { discordId: string } }
+    { params }: { params: Promise<{ discordId: string }> }
 ) {
-    const { discordId } = params;
+    const { discordId } = await params;
 
     if (!discordId) {
         return NextResponse.json({ connected: false }, { status: 400 });
