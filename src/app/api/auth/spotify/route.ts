@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
     if (avatar) cookieStore.set("discord_avatar", avatar, { maxAge: 3600, path: "/" });
 
     const clientId = process.env.SPOTIFY_CLIENT_ID;
-    const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sargam-web.vercel.app'}/api/auth/callback/spotify`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://sargam-web.vercel.app";
+    const redirectUri = `${baseUrl}/api/auth/callback/spotify`;
 
     const scopes = [
         "user-read-private",

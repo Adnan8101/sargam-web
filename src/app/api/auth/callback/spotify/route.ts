@@ -8,17 +8,20 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get("state");
 
     const cookieStore = await cookies();
-    const discordId = cookieStore.get("discord_id")?.value || state;
-    const discordUsername = cookieStore.get("discord_username")?.value;
-    const discordAvatar = cookieStore.get("discord_avatar")?.value;
+    const cookieDiscordId = (await cookieStore).get("discord_id")?.value;
+    const discordId = cookieDiscordId || state;
+    const discordUsername = (await cookieStore).get("discord_username")?.value;
+    const discordAvatar = (await cookieStore).get("discord_avatar")?.value;
 
     if (!code || !discordId) {
+        console.error("Missing code or discordId. Code:", !!code, "discordId:", discordId);
         return NextResponse.json({ error: "Missing code or discord_id" }, { status: 400 });
     }
 
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-    const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sargam-web.vercel.app'}/api/auth/callback/spotify`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://sargam-web.vercel.app";
+    const redirectUri = `${baseUrl}/api/auth/callback/spotify`;
 
     try {
         // 1. Exchange code for tokens
@@ -65,6 +68,8 @@ export async function GET(request: NextRequest) {
                 expiresAt,
                 discordUsername,
                 discordAvatar,
+                spotifyDisplayName,
+                spotifyImage,
                 isActive: true,
             },
             create: {
@@ -75,6 +80,8 @@ export async function GET(request: NextRequest) {
                 expiresAt,
                 discordUsername,
                 discordAvatar,
+                spotifyDisplayName,
+                spotifyImage,
                 isActive: true,
             },
         });
@@ -100,7 +107,7 @@ export async function GET(request: NextRequest) {
         }
 
         // 5. Redirect to success page
-        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://sargam-web.vercel.app'}/spotify/success`);
+        return NextResponse.redirect(`${baseUrl}/spotify/success`);
     } catch (error) {
         console.error("Spotify callback error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

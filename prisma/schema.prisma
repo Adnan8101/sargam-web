@@ -89,6 +89,8 @@ model SpotifyConnection {
   updatedAt       DateTime @updatedAt @map("updated_at")
   isActive        Boolean  @default(true) @map("is_active")
   scopes          String?
+  spotifyDisplayName String? @map("spotify_display_name")
+  spotifyImage       String? @map("spotify_image")
 
   @@index([discordId], map: "idx_spotify_connections_discord_id")
   @@index([spotifyUserId], map: "idx_spotify_connections_spotify_user_id")
