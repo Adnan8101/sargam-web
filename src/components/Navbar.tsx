@@ -16,7 +16,7 @@ export default function Navbar() {
                 </Link>
 
                 <div className="hidden md:flex items-center gap-12 bg-white/60 backdrop-blur-3xl px-12 py-5 rounded-[2rem] border border-white/40 shadow-[0_20px_40px_rgba(0,0,0,0.05)]">
-                    {["Features", "Premium", "Docs"].map((item) => (
+                    {["Features", "Spotify", "Commands", "Premium", "Docs"].map((item) => (
                         <Link
                             key={item}
                             href={item === "Features" ? "#features" : `/${item.toLowerCase()}`}
