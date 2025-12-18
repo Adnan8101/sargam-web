@@ -70,9 +70,9 @@ export default function Features() {
                             key={i}
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
+                            viewport={{ once: true, margin: "-50px" }}
                             transition={{ delay: i * 0.1 }}
-                            className="feature-card group flex flex-col hover:border-primary/10"
+                            className="feature-card group flex flex-col hover:border-primary/10 will-change-transform"
                         >
                             <div className="relative w-full h-[320px] mb-12 rounded-[2.5rem] overflow-hidden bg-white border border-border group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.04)] transition-all flex items-center justify-center p-12">
                                 <Image
@@ -104,8 +104,8 @@ export default function Features() {
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="bg-primary p-16 rounded-[4rem] col-span-1 md:col-span-2 flex flex-col lg:flex-row items-center justify-between gap-16 text-white shadow-3xl shadow-primary/20"
+                        viewport={{ once: true, margin: "-50px" }}
+                        className="bg-primary p-16 rounded-[4rem] col-span-1 md:col-span-2 flex flex-col lg:flex-row items-center justify-between gap-16 text-white shadow-3xl shadow-primary/20 will-change-transform"
                     >
                         <div className="space-y-8 flex-1">
                             <h3 className="text-4xl md:text-6xl font-black tracking-tighter">Everything working, <br /> exactly as you want.</h3>

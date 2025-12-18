@@ -5,15 +5,15 @@ import Link from "next/link";
 
 export default function Footer() {
     return (
-        <footer className="bg-zinc-50 pt-32 pb-16 px-6 border-t border-border">
+        <footer className="bg-zinc-50 pt-16 md:pt-32 pb-16 px-6 border-t border-border">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-16 mb-24">
                     <div className="space-y-8 max-w-md">
-                        <Link href="/" className="flex items-center gap-3">
-                            <div className="bg-primary p-2.5 rounded-2xl shadow-lg shadow-primary/20">
+                        <Link href="/" className="flex items-center gap-3 group">
+                            <div className="bg-primary p-2.5 rounded-2xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300">
                                 <Music className="w-6 h-6 text-white" />
                             </div>
-                            <span className="text-3xl font-black tracking-tighter">SARGAM</span>
+                            <span className="text-3xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors">SARGAM</span>
                         </Link>
                         <p className="text-lg text-zinc-500 font-bold leading-relaxed">
                             Listen to everything, together. The most powerful music system built for Discord communities.

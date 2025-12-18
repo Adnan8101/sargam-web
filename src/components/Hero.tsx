@@ -18,7 +18,7 @@ export default function Hero() {
                         opacity: [0.03, 0.08, 0.03]
                     }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[120%] aspect-square bg-primary rounded-full blur-[160px]"
+                    className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[120%] aspect-square bg-primary rounded-full blur-[160px] will-change-transform"
                 />
                 <motion.div
                     animate={{
@@ -26,7 +26,7 @@ export default function Hero() {
                         y: [-10, 10, -10]
                     }}
                     transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-1/3 left-1/3 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]"
+                    className="absolute top-1/3 left-1/3 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] will-change-transform"
                 />
             </div>
 
@@ -87,7 +87,7 @@ export default function Hero() {
                     initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
                     animate={{ opacity: 1, scale: 1, rotateY: 0 }}
                     transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="relative order-1 lg:order-2 flex justify-center lg:justify-end"
+                    className="relative order-1 lg:order-2 flex justify-center lg:justify-end will-change-transform"
                     style={{ y, rotateY }}
                 >
                     {/* Rhythmic Glow (Music Pulse) */}
