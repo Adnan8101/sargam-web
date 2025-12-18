@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Search, Copy, Check, Music, ListMusic, User, Settings, Info, Zap, LayoutGrid } from "lucide-react";
+import { Search, Copy, Check, Music, ListMusic, User, Settings, Info, Zap, LayoutGrid, Globe } from "lucide-react";
 
 const COMMAND_CATEGORIES = [
+    { id: "all", name: "All Commands", icon: Globe },
     { id: "music", name: "Music", icon: Music },
     { id: "queue", name: "Queue", icon: ListMusic },
     { id: "spotify", name: "Spotify", icon: Zap },
@@ -63,7 +64,7 @@ const COMMANDS_DATA = {
 };
 
 export default function CommandsPage() {
-    const [activeCategory, setActiveCategory] = useState("music");
+    const [activeCategory, setActiveCategory] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
 
@@ -73,10 +74,17 @@ export default function CommandsPage() {
         setTimeout(() => setCopiedIndex(null), 2000);
     };
 
-    const filteredCommands = COMMANDS_DATA[activeCategory as keyof typeof COMMANDS_DATA].filter(
+    const getCommands = () => {
+        if (activeCategory === "all") {
+            return Object.values(COMMANDS_DATA).flat();
+        }
+        return COMMANDS_DATA[activeCategory as keyof typeof COMMANDS_DATA];
+    };
+
+    const filteredCommands = getCommands().filter(
         (cmd) =>
             cmd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            cmd.description.toLowerCase().includes(searchQuery.toLowerCase())
+            cmd.aliases.some(alias => alias.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     return (
@@ -105,8 +113,8 @@ export default function CommandsPage() {
                                         key={cat.id}
                                         onClick={() => setActiveCategory(cat.id)}
                                         className={`w-full flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all ${activeCategory === cat.id
-                                                ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
-                                                : "bg-white text-muted-foreground hover:bg-zinc-100"
+                                            ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
+                                            : "bg-white text-muted-foreground hover:bg-zinc-100 hover:scale-[1.02] hover:shadow-md"
                                             }`}
                                     >
                                         <Icon size={20} />
